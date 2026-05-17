@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lens — Image Explorer</title>
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #0a0a0a;
+            --surface: #141414;
+            --surface2: #1e1e1e;
+            --border: #2a2a2a;
+            --accent: #e8ff47;
+            --accent-dim: rgba(232, 255, 71, 0.12);
+            --text: #f0f0f0;
+            --muted: #666;
+            --radius: 12px;
+        }
+
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: 'DM Sans', sans-serif;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+            pointer-events: none;
+            z-index: 999;
+            opacity: 0.4;
+        }
+
+        header {
+            padding: 48px 40px 0;
+            display: flex;
+            align-items: flex-end;
+            gap: 16px;
+        }
+
+        .logo {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: clamp(52px, 8vw, 80px);
+            letter-spacing: 4px;
+            color: var(--accent);
+            line-height: 1;
+        }
+
+        .logo-sub {
+            font-size: 13px;
+            color: var(--muted);
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            padding-bottom: 14px;
+        }
+
+        .search-wrap {
+            padding: 32px 40px 0;
+            display: flex;
+            gap: 12px;
+            max-width: 740px;
+        }
+
+        .search-input {
+            flex: 1;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 14px 20px;
+            font-size: 15px;
+            font-family: 'DM Sans', sans-serif;
+            color: var(--text);
+            outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        .search-input::placeholder { color: var(--muted); }
+
+        .search-input:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px var(--accent-dim);
+        }
+
+        .search-btn {
+            background: var(--accent);
+            color: #000;
+            border: none;
+            border-radius: var(--radius);
+            padding: 14px 28px;
+            font-size: 14px;
+            font-weight: 600;
+            font-family: 'DM Sans', sans-serif;
+            letter-spacing: 0.5px;
+            cursor: pointer;
+            transition: transform 0.15s, opacity 0.15s;
+            white-space: nowrap;
+        }
+
+        .search-btn:hover { opacity: 0.88; transform: translateY(-1px); }
+        .search-btn:active { transform: translateY(0); }
+        .search-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+        .stats-bar {
+            padding: 20px 40px 0;
+            font-size: 13px;
+            color: var(--muted);
+            min-height: 36px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .stats-bar .count {
+            color: var(--accent);
+            font-weight: 600;
+        }
+
+        .loader {
+            display: none;
+            padding: 80px 40px;
+            text-align: center;
+        }
+
+        .loader.active { display: block; }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 2px solid var(--border);
+            border-top-color: var(--accent);
+            border-radius: 50%;
+            animation: spin 0.7s linear infinite;
+            margin: 0 auto 16px;
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .loader p { color: var(--muted); font-size: 14px; }
+
+        #images {
+            padding: 24px 40px 60px;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            gap: 14px;
+        }
+
+        .img-card {
+            position: relative;
+            border-radius: var(--radius);
+            overflow: hidden;
+            background: var(--surface);
+            aspect-ratio: 1;
+            cursor: pointer;
+            animation: fadeUp 0.4s ease both;
+        }
+
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(16px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        .img-card img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+            transition: transform 0.35s ease;
+        }
+
+        .img-card:hover img { transform: scale(1.06); }
+
+        .img-card .overlay {
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(to top, rgba(0,0,0,0.75) 0%, transparent 55%);
+            opacity: 0;
+            transition: opacity 0.3s;
+            display: flex;
+            align-items: flex-end;
+            padding: 14px;
+        }
+
+        .img-card:hover .overlay { opacity: 1; }
+
+        .overlay-btn {
+            background: var(--accent);
+            color: #000;
+            border: none;
+            border-radius: 6px;
+            padding: 7px 14px;
+            font-size: 12px;
+            font-weight: 600;
+            font-family: 'DM Sans', sans-serif;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        #lightbox {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.92);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            animation: fadeIn 0.2s ease;
+        }
+
+        #lightbox.open { display: flex; }
+
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        #lightbox img {
+            max-width: 90vw;
+            max-height: 88vh;
+            border-radius: 10px;
+            object-fit: contain;
+            box-shadow: 0 32px 80px rgba(0,0,0,0.6);
+        }
+
+        .lb-close {
+            position: absolute;
+            top: 24px; right: 28px;
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            color: var(--text);
+            font-size: 22px;
+            width: 44px; height: 44px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            transition: background 0.2s;
+        }
+
+        .lb-close:hover { background: var(--surface); }
+
+        .empty-state {
+            display: none;
+            padding: 80px 40px;
+            text-align: center;
+        }
+
+        .empty-state.active { display: block; }
+
+        .empty-icon { font-size: 48px; margin-bottom: 16px; opacity: 0.4; }
+        .empty-state p { color: var(--muted); font-size: 15px; }
+
+        @media (max-width: 600px) {
+            header, .search-wrap, .stats-bar, #images { padding-left: 20px; padding-right: 20px; }
+            .search-wrap { flex-direction: column; }
+            .search-btn { width: 100%; }
+            #images { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="logo">LENS</div>
+        <div class="logo-sub">Image Explorer</div>
+    </header>
+
+    <div class="search-wrap">
+        <input
+            type="text"
+            id="query"
+            class="search-input"
+            placeholder="Search anything — sunsets, architecture, cats..."
+            onkeydown="if(event.key==='Enter') searchImages()"
+            autofocus
+        >
+        <button class="search-btn" id="searchBtn" onclick="searchImages()">Search</button>
+    </div>
+
+    <div class="stats-bar" id="statsBar"></div>
+
+    <div class="loader" id="loader">
+        <div class="spinner"></div>
+        <p>Fetching images…</p>
+    </div>
+
+    <div class="empty-state" id="emptyState">
+        <div class="empty-icon">🔍</div>
+        <p>No images found. Try a different search term.</p>
+    </div>
+
+    <div id="images"></div>
+
+    <div id="lightbox" onclick="closeLightbox(event)">
+        <button class="lb-close" onclick="closeLightbox()">✕</button>
+        <img id="lbImg" src="" alt="Full size">
+    </div>
+
+    <script>
+        const SHOW_COUNT  = 80;
+        const TOTAL_LIMIT = 175;
+
+        async function searchImages() {
+            const query = document.getElementById("query").value.trim();
+            if (!query) return;
+
+            const btn      = document.getElementById("searchBtn");
+            const loader   = document.getElementById("loader");
+            const grid     = document.getElementById("images");
+            const statsBar = document.getElementById("statsBar");
+            const empty    = document.getElementById("emptyState");
+
+            btn.disabled = true;
+            btn.textContent = "Searching…";
+            loader.classList.add("active");
+            grid.innerHTML = "";
+            statsBar.innerHTML = "";
+            empty.classList.remove("active");
+
+            try {
+                const res  = await fetch(`/search?q=${encodeURIComponent(query)}`);
+                const data = await res.json();
+
+                loader.classList.remove("active");
+
+                const allUrls = (data.images || []).filter(Boolean).slice(0, TOTAL_LIMIT);
+
+                if (!allUrls.length) {
+                    empty.classList.add("active");
+                    return;
+                }
+
+                const displayPool = allUrls.slice(0, SHOW_COUNT);
+                const reserve     = allUrls.slice(SHOW_COUNT);
+                let reserveIndex  = 0;
+                let activeCards   = displayPool.length;
+
+                function updateStats() {
+                    statsBar.innerHTML = `<span class="count">${activeCards}</span> images found`;
+                }
+
+                updateStats();
+
+                function makeCard(url, index) {
+                    const card = document.createElement("div");
+                    card.className = "img-card";
+                    card.style.animationDelay = `${Math.min(index * 20, 400)}ms`;
+
+                    const img = document.createElement("img");
+                    img.alt     = query;
+                    img.loading = "lazy";
+
+                    function tryLoad(src) {
+                        img.src = "";
+                        img.src = src;
+                    }
+
+                    img.onerror = () => {
+                        if (reserveIndex < reserve.length) {
+                            const nextUrl = reserve[reserveIndex++];
+                            card.onclick = () => openLightbox(nextUrl);
+                            const a = card.querySelector(".overlay-btn");
+                            if (a) a.href = nextUrl;
+                            tryLoad(nextUrl);
+                        } else {
+                            card.remove();
+                            activeCards--;
+                            updateStats();
+                        }
+                    };
+
+                    tryLoad(url);
+
+                    const overlay = document.createElement("div");
+                    overlay.className = "overlay";
+
+                    const openBtn = document.createElement("a");
+                    openBtn.className   = "overlay-btn";
+                    openBtn.href        = url;
+                    openBtn.target      = "_blank";
+                    openBtn.rel         = "noopener";
+                    openBtn.textContent = "Open original ↗";
+                    openBtn.onclick     = e => e.stopPropagation();
+
+                    overlay.appendChild(openBtn);
+                    card.appendChild(img);
+                    card.appendChild(overlay);
+                    card.addEventListener("click", () => openLightbox(url));
+
+                    return card;
+                }
+
+                const fragment = document.createDocumentFragment();
+                displayPool.forEach((url, i) => fragment.appendChild(makeCard(url, i)));
+                grid.appendChild(fragment);
+
+            } catch (err) {
+                loader.classList.remove("active");
+                statsBar.innerHTML = `<span style="color:#ff6b6b">Error fetching images. Is the server running?</span>`;
+            } finally {
+                btn.disabled = false;
+                btn.textContent = "Search";
+            }
+        }
+
+        function openLightbox(src) {
+            document.getElementById("lbImg").src = src;
+            document.getElementById("lightbox").classList.add("open");
+            document.body.style.overflow = "hidden";
+        }
+
+        function closeLightbox(e) {
+            if (e && e.target !== document.getElementById("lightbox") && !e.target.classList.contains("lb-close")) return;
+            document.getElementById("lightbox").classList.remove("open");
+            document.getElementById("lbImg").src = "";
+            document.body.style.overflow = "";
+        }
+
+        document.addEventListener("keydown", e => {
+            if (e.key === "Escape") closeLightbox({ target: document.getElementById("lightbox") });
+        });
+    </script>
+</body>
+</html>
