@@ -7,8 +7,8 @@ import urllib.parse
 
 app = Flask(__name__)
 
-TARGET_IMAGES = 200  # Changed to exactly 100 images
-MAX_PAGES = 17  # Increased to ensure we can get 100 images
+TARGET_IMAGES = 100  
+MAX_PAGES = 20  
 
 @app.route("/")
 def home():
@@ -65,7 +65,7 @@ def search():
         first = 0
         page = 0
 
-        # Keep fetching until we have exactly 100 images or run out of pages
+       
         while len(image_urls) < TARGET_IMAGES and page < MAX_PAGES:
             url = (
                 f"https://www.bing.com/images/search"
