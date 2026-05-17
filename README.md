@@ -43,7 +43,7 @@ Frontend| HTML, CSS
 
 🚀 Installation
 
-git clone https://github.com/YOUR_USERNAME/google-image-scraper-flask.git
+git clone https://github.com/HUMAID26/google-image-scraper.git
 
 cd google-image-scraper-flask
 
@@ -74,10 +74,7 @@ google-image-scraper-flask/
 ├── README.md
 │
 ├── templates/
-│   └── index.html
-│
-└── static/
-    └── style.css
+   └── index.html
 
 ---
 
