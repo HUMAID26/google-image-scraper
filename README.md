@@ -1,9 +1,5 @@
 🔍 Google Image Scraper — Flask & Beautiful Soup
 
-"Python" (https://img.shields.io/badge/Python-3.8+-blue?style=flat&logo=python&logoColor=white)
-"Flask" (https://img.shields.io/badge/Flask-2.x-black?style=flat&logo=flask&logoColor=white)
-"BeautifulSoup" (https://img.shields.io/badge/BeautifulSoup4-WebScraping-orange?style=flat)
-
 A Flask-based web application that dynamically fetches and displays Google Images using Python and Beautiful Soup.
 
 ---
