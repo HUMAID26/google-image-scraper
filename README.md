@@ -70,6 +70,7 @@ requests
 google-image-scraper-flask/
 
 │
+
 ├── app.py
 
 ├── requirements.txt
