@@ -71,9 +71,13 @@ google-image-scraper-flask/
 
 │
 ├── app.py
+
 ├── requirements.txt
+
 ├── README.md
+
 ├── templates/
+
    └── index.html
 
 ---
