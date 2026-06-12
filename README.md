@@ -79,7 +79,7 @@ google-image-scraper-flask/
 
 ├── templates/
 
-   └── index.html
+    └── index.html
 
 ---
 
